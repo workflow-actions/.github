@@ -2,12 +2,8 @@ name: syncronize-repository-content
 
 on:
   schedule:
-    - cron:  '0 */12 * * *'
+    - cron:  '15 1 * * 5'
   workflow_dispatch:
-  push:
-    branches:
-      - main
-      - $default-branch
 
 env:
   OWNER: ivankatliarchuk
