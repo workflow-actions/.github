@@ -1,7 +1,8 @@
-'use strict';
+"use strict";
 // https://github.com/renovatebot/github-action/blob/main/.github/renovate.json
 // https://docs.renovatebot.com/configuration-options/
 
+const fs = require('fs');
 const dry_run = process.env.RENOVATE_DRY_RUN
 console.log(`DRY_RUN mode: ${dry_run}`);
 
@@ -11,34 +12,42 @@ module.exports = {
   "extends": [":disableRateLimiting", ":semanticCommits"],
   "assigneesFromCodeOwners": true,
   "assignees": ["ivankatliarchuk"],
-  "labels": ["renovate", "dependencies"],
   "dependencyDashboardTitle": "Dependency Dashboard self-hosted",
   "gitAuthor": "Renovate Bot <bot@renovateapp.com>",
   "onboarding": true,
   "platform": "github",
   "dryRun": dry_run,
+  // "repositories": JSON.parse(fs.readFileSync('/ren/repositories.json', 'utf8')),
   "printConfig": false,
+  "prConcurrentLimit": 0,
+  "prHourlyLimit": 0,
+  "stabilityDays": 3,
   "pruneStaleBranches": true,
   "recreateClosed": true,
+  "dependencyDashboard": false,
+  "requireConfig": false,
   "rebaseWhen": "behind-base-branch",
   "baseBranches": ["master", "main"],
   "username": "ivankatliarchuk",
-  "prHourlyLimit": 20,
-  "stabilityDays": 3,
   "semanticCommits": "enabled",
   "onboardingConfig": { "extends": ["github>ivankatliarchuk/.github"] },
   "hostRules": [
     {
-      "hostType": 'docker',
-      "username": 'cloudkats',
+      "hostType": "docker",
+      "username": "cloudkats",
       "password": process.env.RENOVATE_DOCKER_HUB_PASSWORD,
     },
   ],
+  "git-submodules": {
+    "enabled": true
+  },
+  "labels": ["renovate", "dependencies"],
   "packageRules": [
     // labels section --> start
     {
       "matchUpdateTypes": ["major", "minor", "patch", "pin", "digest"],
-      "addLabels": ["{{depType}}", "{{datasource}}", "{{updateType}}"]
+      "addLabels": ["{{depType}}", "{{datasource}}", "{{updateType}}"],
+      "commitMessageSuffix": '({{packageFile}})'
     },
     { "addLabels": ["php"], "matchLanguages": ["php"] },
     { "addLabels": ["js"], "matchLanguages": ["js"] },
@@ -57,21 +66,18 @@ module.exports = {
       "separateMinorPatch": true,
       "matchDatasources": ["docker"],
       "separateMultipleMajor": true,
-      "commitMessageSuffix": "({{packageFileDir}})",
-      "groupName": "{{datasource}} {{depType}} {{packageFile}}",
-      "addLabels": ["{{depType}}", "{{datasource}}", "{{updateType}}"]
+      "groupName": "{{packageFile}}",
+      "addLabels": ["{{datasource}}", "{{updateType}}"]
     },
     {
-      "groupName": "actions",
       "matchPackageNames": ["actions/*"],
       "matchManagers": ["github-actions"],
       "additionalBranchPrefix": "{{packageFileDir}}-",
       "separateMajorMinor": true,
       "separateMinorPatch": true,
       "separateMultipleMajor": true,
-      "commitMessageSuffix": "({{packageFileDir}})",
       "groupName": "{{datasource}} {{depType}} {{packageFile}}",
-      "addLabels": ["{{depType}}", "{{datasource}}", "{{updateType}}"]
+      "addLabels": ["{{datasource}}", "{{updateType}}"]
     },
     {
       "automerge": false,
@@ -80,8 +86,7 @@ module.exports = {
       "matchManagers": ["terraform", "terraform-version"],
       "matchPackagePatterns": [".*"],
       "groupName": "{{datasource}} {{depType}} {{packageFile}}",
-      "commitMessageSuffix": "({{packageFileDir}})",
-      "addLabels": ["{{depType}}", "{{datasource}}", "{{updateType}}"]
+      "addLabels": ["{{datasource}}", "{{updateType}}"]
     },
     {
       "commitMessageTopic": "Helm chart {{depName}}",
@@ -89,13 +94,12 @@ module.exports = {
       "separateMinorPatch": false,
       "matchDatasources": ["helm"],
       "groupName": "{{datasource}} {{depType}} {{packageFile}}",
-      "addLabels": ["{{depType}}", "{{datasource}}", "{{updateType}}"]
+      "addLabels": ["{{datasource}}", "{{updateType}}"]
     },
     {
       "separateMajorMinor": false,
       "separateMinorPatch": false,
       "groupName": "{{datasource}} {{depType}} {{packageFile}}",
-      "commitMessageSuffix": "({{packageFileDir}})",
       "ignorePaths": [".*python-version"],
       "matchManagers": [
         "pip_requirements",
@@ -106,25 +110,9 @@ module.exports = {
         "setup-cfg"
       ],
       "matchPackagePatterns": [".*"],
-      "addLabels": ["{{depType}}", "{{datasource}}", "{{updateType}}"]
+      "addLabels": ["{{datasource}}", "{{updateType}}"]
     },
-
     // legacy
-
-    { "matchPackagePatterns": ["*"] },
-    { "groupName": "dependencies", "matchDepTypes": ["dependencies"] },
-    { "groupName": "devDependencies", "matchDepTypes": ["devDependencies"] },
-    {
-      "groupName": "devDependencies(non-major)",
-      "matchDepTypes": ["devDependencies(non-major)"]
-    },
-    {
-      "labels": ["renovate/image-release", "dependency/major"],
-      "enabled": true,
-      "matchDatasources": ["docker"],
-      "matchUpdateTypes": ["major"],
-      "groupName": "docker"
-    },
     {
       "versioning": "regex:^v(?<major>\\d+)(\\.(?<minor>\\d+))?(\\.(?<patch>\\d+))?",
       "groupName": "actions",
@@ -133,14 +121,15 @@ module.exports = {
     {
       "enabled": true,
       "groupName": "actions",
-      "matchManagers": ["github-actions"]
+      "matchManagers": ["github-actions"],
+      "addLabels": ["{{datasource}}", "{{updateType}}"]
     },
     {
       "versioning": "semver",
       "matchDatasources": "go",
       "matchManagers": ["gomod"],
-      "matchUpdateTypes": ["pin", "digest"]
-    },
+      "addLabels": ["{{datasource}}", "{{updateType}}", "go"]
+    }
   ],
   "regexManagers": [
     {
@@ -184,11 +173,11 @@ module.exports = {
     {
       // TODO: validate why is not working correctly
       "fileMatch": [
-        "(^workflow-templates|\.github\/workflows)\/[^/]+\.ya?ml$",
-        "(^workflow-templates|\.github\/workflows)\/[^/]+\.ya?ml$(^|\/)action\.ya?ml$"
+        "(^workflow-templates|.github/workflows)\/[^/]+\.ya?ml$",
+        "(^workflow-templates|.github/workflows)\/[^/]+\.ya?ml$(^|\/)action\.ya?ml$"
       ],
       "matchStrings": ["uses: (?<depName>.*?)@(?<currentValue>.*?)\n"],
-      "datasourceTemplate": 'github-tags'
+      "datasourceTemplate": "github-tags"
     },
     // legacy
     {
@@ -220,13 +209,13 @@ module.exports = {
     },
     {
       fileMatch: [
-        '^Dockerfile$',
+        "^Dockerfile$",
         "Dockerfile$",
       ],
       matchStrings: [
-        '#\\s*renovate:\\s*datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s(ARG|ENV) .*?_VERSION(=|\\s)(?<currentValue>.*)\\s'
+        "#\\s*renovate:\\s*datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s(ARG|ENV) .*?_VERSION(=|\\s)(?<currentValue>.*)\\s"
       ],
-      versioningTemplate: '{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}'
+      versioningTemplate: "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
     },
     {
       "fileMatch": [
@@ -243,12 +232,7 @@ module.exports = {
       "lookupNameTemplate": "{{{depName}}}"
     },
     {
-      "fileMatch": [
-        "Dockerfile$",
-        "^Dockerfile$",
-        "(^|/|\\.)Dockerfile$",
-        "(^|/)Dockerfile\\.[^/]*$"
-      ],
+      "fileMatch": [".*"],
       "matchStrings": [
         "datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\sENV .*?_VERSION=(?<currentValue>.*)\\s"
       ],
@@ -256,15 +240,22 @@ module.exports = {
       "datasourceTemplate": "github-releases"
     },
     {
-      "fileMatch": [
-        "Dockerfile$",
-        "(^|/|\\.)Dockerfile$",
-        "(^|/)Dockerfile\\.[^/]*$"
-      ],
+      "fileMatch": [ ".*" ],
       "matchStrings": [
         "ARG IMAGE=(?<depName>.*?):(?<currentValue>.*?)@(?<currentDigest>sha256:[a-f0-9]+)s"
       ],
       "datasourceTemplate": "docker"
-    }
+    },
+    {
+      "description": "Update docker references in Makefile",
+      "fileMatch": [
+        "Makefile$"
+      ],
+      "matchStrings": [
+        "CI_RENOVATE_IMAGE\\s*:=\\s*(?<depName>renovate\\/renovate):(?<currentValue>[a-z0-9.-]+)(?:@(?<currentDigest>sha256:[a-f0-9]+))?"
+      ],
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "docker"
+    },
   ]
 };

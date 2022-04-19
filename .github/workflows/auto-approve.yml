@@ -12,14 +12,14 @@ jobs:
   auto-approve:
     runs-on: ubuntu-latest
     steps:
-    - uses: hmarr/auto-approve-action@v2.1.0
+    - uses: hmarr/auto-approve-action@v2.2.1
       if: >
         github.actor == 'dependabot[bot]' || github.actor == 'dependabot-preview[bot]' || github.actor == ${{ env.ACTOR }}
       with:
         github-token: "${{ secrets.GITHUB_TOKEN }}"
 
     - name: add-label-on-approve
-      uses: actions/github-script@v5
+      uses: actions/github-script@v6
       if: success()
       with:
         github-token: ${{secrets.GITHUB_TOKEN}}
