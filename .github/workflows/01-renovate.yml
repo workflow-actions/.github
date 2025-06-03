@@ -1,4 +1,4 @@
-name: renovate
+name: 01-renovate
 
 on:
   push:
@@ -14,6 +14,11 @@ on:
     # https://crontab.guru/
     - cron: '0 4 * * *'
 
+# https://docs.github.com/en/actions/using-jobs/using-concurrency
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 env:
   RENOVATE_CONFIG_FOLDER: renovate
   LOG_LEVEL: info
@@ -24,7 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.repository == 'ivankatliarchuk/.github'
     steps:
-      - uses: actions/checkout@v4.0.0
+      - uses: actions/checkout@v4.2.2
         with:
           fetch-depth: '1'
 
@@ -40,7 +45,7 @@ jobs:
 
       # https://github.com/renovatebot/github-action install renovate app
       - name: execute-dependency-update
-        uses: renovatebot/github-action@v39.0.5
+        uses: renovatebot/github-action@v41.0.22
         with:
           configurationFile: ${{ env.RENOVATE_CONFIG_FOLDER }}/config.js
           token: ${{ secrets.RENOVATE_TOKEN }}
